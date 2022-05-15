@@ -66,6 +66,7 @@ You can use below command line to run the finetune script and gain the training 
 ```
 CUDA_VISIBLE_DEVICES=0 python train_semseg_rotation.py --batch_size 16 --test_batch_size 16 --npoints 2048 --epoch 300 --model dgcnn --change rotation_16_2048_50  --exp training_125 --bolt_weight 1 --finetune True  --root /home/ies/bi/data/previous_finetune
 ```
+<<<<<<< HEAD
 
 ## Test the finetune model without rotation
 You can use below command line to run the test finetune script and gain the test result:
@@ -73,6 +74,22 @@ You can use below command line to run the test finetune script and gain the test
 CUDA_VISIBLE_DEVICES=0 python train_semseg.py --batch_size 16 --test_batch_size 16 --npoints 2048 --model dgcnn --change without_rotation_16_2048_50   --exp training_125 --bolt_weight 1 --root /home/ies/bi/data/previous_test --finetune True --eval True
 ```
 The change and model parameter are exactly same with the paramater you set in the finetune process.
+=======
+
+## Test the finetune model without rotation
+You can use below command line to run the test finetune script and gain the test result:
+```
+CUDA_VISIBLE_DEVICES=0 python train_semseg.py --batch_size 16 --test_batch_size 16 --npoints 2048 --model dgcnn --change without_rotation_16_2048_50   --exp training_125 --bolt_weight 1 --root /home/ies/bi/data/previous_test --finetune True --eval True
+```
+The change and model parameter are exactly same with the paramater you set in the finetune process.
+
+## Test the finetune model with rotation
+You can use below command line to run the test finetune script and gain the test result:
+```
+CUDA_VISIBLE_DEVICES=0 python train_semseg_rotation.py --batch_size 16 --test_batch_size 16 --npoints 2048 --model dgcnn --change rotation_16_2048_50   --exp training_125 --bolt_weight 1 --root /home/ies/bi/data/previous_test --finetune True --eval True
+```
+The change and model parameter are exactly same with the paramater you set in the finetune proces
+>>>>>>> 86a21d4d8e2e1e4d418504bab0991f743bc6246e
 
 ## Test the finetune model with rotation
 You can use below command line to run the test finetune script and gain the test result:
