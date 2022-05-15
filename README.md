@@ -11,9 +11,29 @@ PyTorch = 1.6
 The mentioned API are the basic API. In the training  process,if there is warning that some modul is missing. you could direct use pip install to install specific modul.
 For example, if there is no installation of open3d in the process of running of the script, you could direct use pip install open3d to install conrresponding toolkits
 
+# The Model We have
+
+## Mdoels without rotation as augmentation
+
+* dgcnn: the original dgcnn model
+* dgcnn_conv: dgcnn with con1d as additional aggregation
+* dgcnn_self: dgcnn with one layer of self-attention
+* dgcnn_3_layers_self: dgcnn with three layer of self-attention 
+* dgcnn_self_conv: dgcnn with one layer of self-attention and con1d as additional aggregation
+* PCT: PCT net
+
+## Mdoels with rotation as augmentation
+
+* dgcnn_rotate: the original dgcnn model integrated with T-Net
+* dgcnn_conv_rotate: dgcnn with con1d as additional aggregation integrated with T-Net
+* dgcnn_self_rotate: dgcnn with one layer of self-attention integrated with T-Net
+* dgcnn_3_layers_self_rotate: dgcnn with three layer of self-attention integrated with T-Net
+* dgcnn_self_conv_rotate: dgcnn with one layer of self-attention and con1d as additional aggregation integrated with T-Net
+* PCT_rotate: PCT net integrated with T-Net
+
 # How to run
 
-## Training the pretraining model
+## Training the pretraining model without rotation
 
 You can use below command line to run the pretraining script and gain the pretraining model:
 ```

@@ -57,10 +57,12 @@ def train(args, io):
     tmp=torch.cuda.max_memory_allocated()
     if args.model == 'dgcnn':
         model = DGCNN_semseg(args).to(device)
-    elif args.model =='dgcnn_self':
-        model = DGCNN_semseg_attention(args).to(device)
     elif args.model == 'dgcnn_conv':
         model = DGCNN_semseg_conv(args).to(device)
+    elif args.model =='dgcnn_self':
+        model = DGCNN_semseg_attention(args).to(device)
+    elif args.model =='dgcnn_3_layers_self':
+        model = DGCNN_semseg_3_layers_attention(args).to(device)
     elif args.model == 'dgcnn_self_conv':
         model = DGCNN_semseg_conv_attention(args).to(device)
     elif args.model == 'PCT':
@@ -286,10 +288,12 @@ def test(args, io):
     #Try to load models
     if args.model == 'dgcnn':
         model = DGCNN_semseg(args).to(device)
-    elif args.model =='dgcnn_self':
-        model = DGCNN_semseg_attention(args).to(device)
     elif args.model == 'dgcnn_con':
         model = DGCNN_semseg_conv(args).to(device)
+    elif args.model =='dgcnn_self':
+        model = DGCNN_semseg_attention(args).to(device)
+    elif args.model =='dgcnn_3_layers_self':
+        model = DGCNN_semseg_3_layers_attention(args).to(device)
     elif args.model == 'dgcnn_self_con':
         model = DGCNN_semseg_conv_attention(args).to(device)
     elif args.model == 'PCT':
@@ -392,7 +396,7 @@ if __name__ == "__main__":
     # Training settings
     parser = argparse.ArgumentParser(description='Point Cloud Semantic Segmentation')
     parser.add_argument('--model', type=str, default='dgcnn_self_conv', metavar='N',
-                        choices=['dgcnn','dgcnn_conv','dgcnn_self','dgcnn_self_conv','PCT'],
+                        choices=['dgcnn','dgcnn_conv','dgcnn_self','dgcnn_3_layers_self','dgcnn_self_conv','PCT'],
                         help='Model to use, [dgcnn]')
     parser.add_argument('--batch_size', type=int, default=5, metavar='batch_size',
                         help='Size of batch)')
