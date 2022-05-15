@@ -18,7 +18,7 @@ from model_rotation import *
 import numpy as np
 from torch.utils.data import DataLoader
 from util import *
-#from display import *
+from display import *
 from torch.utils.tensorboard import SummaryWriter
 from plyfile import PlyData, PlyElement
 import time
@@ -55,41 +55,19 @@ def train(args, io):
     device = torch.device("cuda" if args.cuda else "cpu")
 
     #Try to load models
-    tmp=torch.cuda.max_memory_allocated()
-    if args.model == 'dgcnn':
+    # tmp=torch.cuda.max_memory_allocated()
+    if args.model == 'dgcnn_rotate':
         model = DGCNN_semseg(args).to(device)
+    elif args.model == 'dgcnn_rotate_conv':
+        model = DGCNN_semseg_conv(args).to(device)
     elif args.model =='dgcnn_rotate_self':
         model = DGCNN_semseg_attention(args).to(device)
-    elif args.model == 'dgcnn_conv':
-        model = DGCNN_semseg_conv(args).to(device)
-    elif args.model == 'dgcnn_self_conv':
+    elif args.model =='dgcnn_rotate_3_layers_self':
+        model = DGCNN_semseg_3_layer_attention(args).to(device)
+    elif args.model == 'dgcnn_rotate_self_conv':
         model = DGCNN_semseg_conv_attention(args).to(device)
-    elif args.model == 'PCT':
+    elif args.model == 'PCT_rotate':
         model = PCT_semseg(args).to(device)
-    elif args.model== 'PCT_Nico':
-        model = PCT_Nico(args).to(device)
-    elif args.model== 'PCT_BI':
-        model = PCT_BI(args).to(device)
-    elif args.model== 'My_Net1':
-        model = My_Network1(args).to(device)
-    elif args.model== 'My_Net1_r':
-        model = My_Network1_r(args).to(device)
-    elif args.model== 'My_Net1_r_1472':
-        model = My_Network1_r_1728(args).to(device)
-    elif args.model== 'My_Net2':
-        model = My_Network2(args).to(device)
-    elif args.model== 'My_Net3':
-        model = My_Network3(args).to(device)
-    elif args.model== 'My_Net3_r':
-        model = My_Network3_r(args).to(device)
-    elif args.model== 'My_Net4':
-        model = My_Network4(args).to(device)
-    elif args.model== 'My_Net5':
-        model = My_Network5(args).to(device)
-    elif args.model== 'My_Net6':
-        model = My_Network6(args).to(device)
-    elif args.model== 'My_Net7':
-        model = My_Network7(args).to(device)
     else:
         raise Exception("Not implemented")
     #summary(model,input_size=(3,4096),batch_size=1,device='cuda')
@@ -158,9 +136,10 @@ def train(args, io):
         for i,(points,target) in tqdm(enumerate(train_loader),total=len(train_loader),smoothing=0.9):
             points, target = points.to(device), target.to(device)       #(batch_size, num_points, features)    (batch_size, num_points)
             points=normalize_data(points)                               #[bs,4096,3]
-            if not args.finetune:
-                points=rotate_180_z(points)
+            # if not args.finetune:
+            #     points=rotate_180_z(points)
             points,GT=rotate_per_batch(points)
+            # Visuell_PointCloud_per_batch_according_to_label(points,target)
             points = points.permute(0, 2, 1)                            #(batch_size,features,numpoints)
             batch_size = points.size()[0]
             opt.zero_grad()
@@ -168,8 +147,6 @@ def train(args, io):
             seg_pred = seg_pred.permute(0, 2, 1).contiguous()                      #(batch_size,num_points, class_categories)
             batch_label = target.view(-1, 1)[:, 0].cpu().data.numpy()              #array(batch_size*num_points)
             loss = criterion(seg_pred.view(-1, NUM_CLASS), target.view(-1,1).squeeze())     #a scalar
-            if "My_Net4" in args.model or "My_Net5" in args.model or "My_Net6" in args.model or "My_Net7" in args.model:
-                loss=loss+loss_cluster(result,goal)*args.factor_cluster
             loss = loss+feature_transform_reguliarzer(trans)*args.factor_trans
             loss.backward()
             opt.step()
@@ -283,9 +260,9 @@ def train(args, io):
             if cur_bolts_iou >= best_bolts_iou:
                 best_bolts_iou=cur_bolts_iou
                 if args.finetune:
-                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best_finetune_bolts.pth"
+                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best_finetune.pth"
                 else:
-                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best_bolts.pth"
+                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best.pth"
                 state = {
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
@@ -311,34 +288,18 @@ def test(args, io):
     device = torch.device("cuda" if args.cuda else "cpu")
 
     #Try to load models
-    if args.model == 'dgcnn':
+    if args.model == 'dgcnn_rotate':
         model = DGCNN_semseg(args).to(device)
+    elif args.model == 'dgcnn_rotate_conv':
+        model = DGCNN_semseg_conv(args).to(device)
     elif args.model =='dgcnn_rotate_self':
         model = DGCNN_semseg_attention(args).to(device)
-    elif args.model == 'dgcnn_con':
-        model = DGCNN_semseg_conv(args).to(device)
-    elif args.model == 'dgcnn_self_con':
+    elif args.model =='dgcnn_rotate_3_layers_self':
+        model = DGCNN_semseg_3_layer_attention(args).to(device)
+    elif args.model == 'dgcnn_rotate_self_conv':
         model = DGCNN_semseg_conv_attention(args).to(device)
-    elif args.model == 'PCT':
+    elif args.model == 'PCT_rotate':
         model = PCT_semseg(args).to(device)
-    elif args.model== 'PCT_Nico':
-        model = PCT_Nico(args).to(device)
-    elif args.model== 'PCT_BI':
-        model = PCT_BI(args).to(device)
-    elif args.model== 'My_Net1':
-        model = My_Network1(args).to(device)
-    elif args.model== 'My_Net2':
-        model = My_Network2(args).to(device)
-    elif args.model== 'My_Net3':
-        model = My_Network3(args).to(device)
-    elif args.model== 'My_Net4':
-        model = My_Network4(args).to(device)
-    elif args.model== 'My_Net5':
-        model = My_Network5(args).to(device)
-    elif args.model== 'My_Net6':
-        model = My_Network6(args).to(device)
-    elif args.model== 'My_Net7':
-        model = My_Network7(args).to(device)
     else:
         raise Exception("Not implemented")
 
@@ -386,7 +347,7 @@ def test(args, io):
             data=normalize_data(data)
             data = data.permute(0, 2, 1)
             batch_size = data.size()[0]
-            seg_pred,trans = model(data,seg)
+            seg_pred,trans,_,_ = model(data,seg)
             seg_pred = seg_pred.permute(0, 2, 1).contiguous()
             batch_label = seg.view(-1, 1)[:, 0].cpu().data.numpy()   #array(batch_size*num_points)
             loss = criterion(seg_pred.view(-1, NUM_CLASS), seg.view(-1,1).squeeze())
@@ -436,17 +397,16 @@ def test(args, io):
 if __name__ == "__main__":
     # Training settings
     parser = argparse.ArgumentParser(description='Point Cloud Semantic Segmentation')
-    parser.add_argument('--model', type=str, default='My_Net3_r', metavar='N',
-                        choices=['dgcnn','dgcnn_conv','dgcnn_rotate_self','dgcnn_self_conv','PCT','PCT_BI','PCT_Nico',
-                        'My_Net1','My_Net1_r','My_Net1_r_1472','My_Net2','My_Net3','My_Net3_r','My_Net4','My_Net5','My_Net6','My_Net7'],
-                        help='Model to use, [dgcnn]')
+    parser.add_argument('--model', type=str, default='dgcnn_rotate_self_conv', metavar='N',
+                        choices=['dgcnn_rotate','dgcnn_rotate_conv','dgcnn_rotate_self','dgcnn_rotate_3_layers_self','dgcnn_rotate_self_conv','PCT_rotate'],
+                        help='Model to use, [dgcnn_rotate]')
     parser.add_argument('--batch_size', type=int, default=5, metavar='batch_size',
                         help='Size of batch)')
     parser.add_argument('--root', type=str, default='/home/bi/study/thesis/data/test', 
                         help='file need to be tested')
     parser.add_argument('--exp', type=str, default='training_125', metavar='N',
                         help='experiment version to record reslut')
-    parser.add_argument('--change', type=str, default='allaround_STN_16_2048_300_best', metavar='N',
+    parser.add_argument('--change', type=str, default='hh', metavar='N',
                         help='experiment version to record reslut')
     parser.add_argument('--finetune', type=bool, default=False, metavar='N',
                         help='if we finetune the model')

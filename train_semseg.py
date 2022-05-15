@@ -14,6 +14,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
 from dataloader import *
+from display import Visuell_PointCloud_per_batch_according_to_label
 from model import *
 import numpy as np
 from torch.utils.data import DataLoader
@@ -22,8 +23,6 @@ from util import *
 from torch.utils.tensorboard import SummaryWriter
 from plyfile import PlyData, PlyElement
 import time
-import shutil
-import datetime
 from tqdm import tqdm
 from torchsummary import summary
 
@@ -66,28 +65,6 @@ def train(args, io):
         model = DGCNN_semseg_conv_attention(args).to(device)
     elif args.model == 'PCT':
         model = PCT_semseg(args).to(device)
-    elif args.model== 'PCT_Nico':
-        model = PCT_Nico(args).to(device)
-    elif args.model== 'PCT_BI':
-        model = PCT_BI(args).to(device)
-    elif args.model== 'My_Net1':
-        model = My_Network1(args).to(device)
-    elif args.model== 'My_Net1_r':
-        model = My_Network1_r(args).to(device)
-    elif args.model== 'My_Net2':
-        model = My_Network2(args).to(device)
-    elif args.model== 'My_Net2_r':
-        model = My_Network2_r(args).to(device)
-    elif args.model== 'My_Net3':
-        model = My_Network3(args).to(device)
-    elif args.model== 'My_Net4':
-        model = My_Network4(args).to(device)
-    elif args.model== 'My_Net5':
-        model = My_Network5(args).to(device)
-    elif args.model== 'My_Net6':
-        model = My_Network6(args).to(device)
-    elif args.model== 'My_Net7':
-        model = My_Network7(args).to(device)
     else:
         raise Exception("Not implemented")
     #summary(model,input_size=(3,4096),batch_size=1,device='cuda')
@@ -158,6 +135,7 @@ def train(args, io):
             points=normalize_data(points)                               #[bs,4096,3]
             if not args.finetune:
                 points=rotate_180_z(points)
+            #Visuell_PointCloud_per_batch_according_to_label(points,target)
             points = points.permute(0, 2, 1)                            #(batch_size,features,numpoints)
             batch_size = points.size()[0]
             opt.zero_grad()
@@ -211,6 +189,7 @@ def train(args, io):
                 points=normalize_data(points)
                 if not args.finetune:
                     points=rotate_180_z(points)
+                
                 points = points.permute(0, 2, 1)
                 batch_size = points.size()[0]
                 seg_pred,trans,result_,goal_= model(points,seg)
@@ -277,9 +256,9 @@ def train(args, io):
             if cur_bolts_iou >= best_bolts_iou:
                 best_bolts_iou=cur_bolts_iou
                 if args.finetune:
-                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best_finetune_bolts.pth"
+                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best_finetune.pth"
                 else:
-                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best_bolts.pth"
+                    savepath = str(BASE_DIR)+"/outputs/"+args.model+'/'+args.exp+'/'+args.change+add_string+"/models/best.pth"
                 state = {
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
@@ -315,28 +294,6 @@ def test(args, io):
         model = DGCNN_semseg_conv_attention(args).to(device)
     elif args.model == 'PCT':
         model = PCT_semseg(args).to(device)
-    elif args.model== 'PCT_Nico':
-        model = PCT_Nico(args).to(device)
-    elif args.model== 'PCT_BI':
-        model = PCT_BI(args).to(device)
-    elif args.model== 'My_Net1':
-        model = My_Network1(args).to(device)
-    elif args.model== 'My_Net1_r':
-        model = My_Network1_r(args).to(device)
-    elif args.model== 'My_Net2':
-        model = My_Network2(args).to(device)
-    elif args.model== 'My_Net2_r':
-        model = My_Network2_r(args).to(device)
-    elif args.model== 'My_Net3':
-        model = My_Network3(args).to(device)
-    elif args.model== 'My_Net4':
-        model = My_Network4(args).to(device)
-    elif args.model== 'My_Net5':
-        model = My_Network5(args).to(device)
-    elif args.model== 'My_Net6':
-        model = My_Network6(args).to(device)
-    elif args.model== 'My_Net7':
-        model = My_Network7(args).to(device)
     else:
         raise Exception("Not implemented")
 
@@ -384,7 +341,7 @@ def test(args, io):
             data=normalize_data(data)
             data = data.permute(0, 2, 1)
             batch_size = data.size()[0]
-            seg_pred,trans = model(data,seg)
+            seg_pred,trans,_,_ = model(data,seg)
             seg_pred = seg_pred.permute(0, 2, 1).contiguous()
             batch_label = seg.view(-1, 1)[:, 0].cpu().data.numpy()   #array(batch_size*num_points)
             loss = criterion(seg_pred.view(-1, NUM_CLASS), seg.view(-1,1).squeeze())
@@ -434,16 +391,16 @@ def test(args, io):
 if __name__ == "__main__":
     # Training settings
     parser = argparse.ArgumentParser(description='Point Cloud Semantic Segmentation')
-    parser.add_argument('--model', type=str, default='dgcnn', metavar='N',
-                        choices=['dgcnn','dgcnn_conv','dgcnn_self','dgcnn_self_conv','PCT','PCT_BI','PCT_Nico','My_Net1','My_Net1_r','My_Net2','My_Net2_r','My_Net3','My_Net4','My_Net5','My_Net6','My_Net7'],
+    parser.add_argument('--model', type=str, default='dgcnn_self_conv', metavar='N',
+                        choices=['dgcnn','dgcnn_conv','dgcnn_self','dgcnn_self_conv','PCT'],
                         help='Model to use, [dgcnn]')
     parser.add_argument('--batch_size', type=int, default=5, metavar='batch_size',
                         help='Size of batch)')
-    parser.add_argument('--root', type=str, default='/home/bi/study/thesis/data/current_finetune', 
+    parser.add_argument('--root', type=str, default='/home/bi/study/thesis/data/test', 
                         help='file need to be tested')
     parser.add_argument('--exp', type=str, default='training_125', metavar='N',
                         help='experiment version to record reslut')
-    parser.add_argument('--change', type=str, default='new', metavar='N',
+    parser.add_argument('--change', type=str, default='hh', metavar='N',
                         help='experiment version to record reslut')
     parser.add_argument('--finetune', type=bool, default=False, metavar='N',
                         help='if we finetune the model')
@@ -455,7 +412,7 @@ if __name__ == "__main__":
                         help='factor of loss_cluster')
     parser.add_argument('--factor_trans', type=float, default=0.01, metavar='F',
                         help='factor of loss_cluster')
-    parser.add_argument('--test_batch_size', type=int, default=8, metavar='batch_size',
+    parser.add_argument('--test_batch_size', type=int, default=16, metavar='batch_size',
                         help='Size of batch)')
     parser.add_argument('--epochs', type=int, default=400, metavar='N',
                         help='number of episode to train ')

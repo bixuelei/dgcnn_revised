@@ -80,6 +80,7 @@ class MotorDataset(Dataset):
             motor_directory=os.path.join(data_root,motor_position)
             motor_data=np.load(motor_directory)
             motor_data=densify_blots(motor_data)
+            # motor_data=densify_blots(motor_data)
             motor_points=motor_data[:,0:6]
             motor_labels=motor_data[:,6]            #result is a np array           
             num_eachtype_in_one_motor,_=np.histogram(motor_labels,bins=6,range=(0,6))       #count how much points is there for each type(usage of np.histotram)
